@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  TEAM_LEAD
+  EMPLOYEE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  ON_HOLD
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  OVERDUE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  role       UserRole
+
+  employee   Employee?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isDeleted  Boolean  @default(false)
+
+  @@index([role])
+  @@index([isDeleted])
+}
+
+model Employee {
+  id            Int            @id @default(autoincrement())
+  employeeCode  String         @unique
+  firstName     String
+  lastName      String
+  email         String         @unique
+  phone         String?
+  department    String?
+  designation   String?
+  joiningDate   DateTime
+  status        EmployeeStatus
+
+  userId        Int?           @unique
+  user          User?          @relation(fields: [userId], references: [id])
+
+  assignedTasks Task[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  isDeleted     Boolean        @default(false)
+
+  @@index([status])
+  @@index([department])
+  @@index([isDeleted])
+}
+
+model Client {
+  id             Int          @id @default(autoincrement())
+  clientCode     String       @unique
+  companyName    String
+  contactPerson  String
+  email          String       @unique
+  phone          String?
+  gstNumber      String?      @unique
+  panNumber      String?      @unique
+  address        String?
+  status         ClientStatus
+
+  tasks          Task[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  isDeleted      Boolean      @default(false)
+
+  @@index([status])
+  @@index([companyName])
+  @@index([isDeleted])
+}
+
+model Task {
+  id            Int           @id @default(autoincrement())
+  title         String
+  description   String?
+
+  status        TaskStatus    @default(PENDING)
+  priority      TaskPriority  @default(MEDIUM)
+
+  startDate     DateTime?
+  dueDate       DateTime?
+
+  clientId      Int
+  client        Client        @relation(fields: [clientId], references: [id])
+
+  employeeId    Int?
+  employee      Employee?     @relation(fields: [employeeId], references: [id])
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  isDeleted     Boolean       @default(false)
+
+  @@index([status])
+  @@index([priority])
+  @@index([clientId])
+  @@index([employeeId])
+  @@index([dueDate])
+  @@index([isDeleted])
+}
