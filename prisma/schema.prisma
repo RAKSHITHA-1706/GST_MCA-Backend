@@ -1,4 +1,4 @@
-generator client {
+ generator client {
   provider = "prisma-client-js"
 }
 
@@ -40,6 +40,13 @@ enum TaskPriority {
   URGENT
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LATE
+}
+
 model User {
   id         Int      @id @default(autoincrement())
   email      String   @unique
@@ -71,7 +78,9 @@ model Employee {
   userId        Int?           @unique
   user          User?          @relation(fields: [userId], references: [id])
 
-  assignedTasks Task[]
+  taskAssignments TaskAssignment[]
+  attendances     Attendance[]
+  workLogs        WorkLog[]
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -119,8 +128,8 @@ model Task {
   clientId      Int
   client        Client        @relation(fields: [clientId], references: [id])
 
-  employeeId    Int?
-  employee      Employee?     @relation(fields: [employeeId], references: [id])
+  assignments   TaskAssignment[]
+  workLogs      WorkLog[]
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -129,7 +138,67 @@ model Task {
   @@index([status])
   @@index([priority])
   @@index([clientId])
-  @@index([employeeId])
   @@index([dueDate])
   @@index([isDeleted])
+}
+
+model TaskAssignment {
+  id          Int       @id @default(autoincrement())
+
+  taskId      Int
+  employeeId  Int
+
+  assignedAt  DateTime  @default(now())
+
+  task        Task      @relation(fields: [taskId], references: [id])
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+
+  @@index([taskId])
+  @@index([employeeId])
+}
+
+model Attendance {
+  id                 Int               @id @default(autoincrement())
+
+  employeeId         Int
+
+  checkInTime        DateTime?
+  checkOutTime       DateTime?
+
+  checkInLatitude    Float?
+  checkInLongitude   Float?
+
+  checkOutLatitude   Float?
+  checkOutLongitude  Float?
+
+  checkInAddress     String?
+  checkOutAddress    String?
+
+  status             AttendanceStatus
+
+  employee           Employee          @relation(fields: [employeeId], references: [id])
+
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([employeeId])
+}
+
+model WorkLog {
+  id                   Int        @id @default(autoincrement())
+
+  employeeId           Int
+  taskId               Int
+
+  description          String
+  completionPercentage Int
+
+  employee             Employee   @relation(fields: [employeeId], references: [id])
+  task                 Task       @relation(fields: [taskId], references: [id])
+
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  @@index([employeeId])
+  @@index([taskId])
 }
